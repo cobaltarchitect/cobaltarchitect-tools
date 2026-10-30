@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<!--
+cobalt_위임관리보드_v7.html — v1, 2026-10-28
+
+MIT License
+
+Copyright (c) 2026 Cobalt Architect
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 위임 관리 보드</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#FAF6EE;color:#101012;font-family:"맑은 고딕","Malgun Gothic",sans-serif;line-height:1.6}
+  header,main,footer{max-width:900px;margin:0 auto;padding:16px}
+  h1{font-size:26px;margin:8px 0 4px}
+  h2{font-size:20px;margin:24px 0 8px}
+  h3{font-size:16px;margin:12px 0 6px}
+  p{margin:6px 0}
+  .card{border:1.5px solid #101012;border-radius:8px;padding:14px;margin:10px 0;background:#FAF6EE}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+  .tabs button{border:1.5px solid #101012;border-radius:8px;background:#FAF6EE;color:#101012;padding:9px 14px;cursor:pointer;font-size:15px}
+  .tabs button.active{background:#193A8A;color:#fff;border-color:#193A8A}
+  label{display:block;margin:10px 0 4px;font-weight:bold}
+  input[type="text"],input[type="date"],select,textarea{width:100%;border:1.5px solid #101012;border-radius:6px;padding:9px;background:#fff;color:#101012;font-size:15px}
+  textarea{min-height:64px}
+  button.action{border:1.5px solid #101012;border-radius:8px;background:#193A8A;color:#fff;padding:9px 14px;cursor:pointer;font-size:15px;margin:6px 6px 6px 0}
+  button.ghost{border:1.5px solid #101012;border-radius:8px;background:#FAF6EE;color:#101012;padding:9px 14px;cursor:pointer;font-size:15px;margin:6px 6px 6px 0}
+  .result{border:1.5px solid #193A8A;border-radius:8px;padding:12px;margin:10px 0}
+  .badge{display:inline-block;border:1.5px solid #193A8A;color:#193A8A;border-radius:20px;padding:2px 10px;font-size:13px;font-weight:bold}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#193A8A;vertical-align:middle;margin-right:6px}
+  .muted{font-size:13px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:640px){.row{grid-template-columns:1fr}h1{font-size:22px}}
+  footer{border-top:1.5px solid #101012;margin-top:24px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+<h1>AI 위임 관리 보드</h1>
+<p>서류마다 왜 있는지부터 묻고, 없앨 것 · AI에게 맡길 것 · 사람이 정할 것으로 나눕니다. 에이전트에게 맡긴 일과 확인한 내용을 적어 둡니다.</p>
+<div class="tabs" role="tablist">
+  <button type="button" class="active" data-tab="diag">서류 진단</button>
+  <button type="button" data-tab="ledger">맡긴 일 목록</button>
+  <button type="button" data-tab="check">확인 기록</button>
+  <button type="button" data-tab="overview">한눈에 보기</button>
+  <button type="button" data-tab="guide">사용법</button>
+</div>
+<button type="button" class="action" id="exampleBtn">예시 넣기</button>
+<button type="button" class="ghost" id="exportBtn">JSON 내보내기</button>
+<button type="button" class="ghost" id="importBtn">JSON 불러오기</button>
+<button type="button" class="ghost" id="printBtn">인쇄</button>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+</header>
+
+<main>
+<section id="tab-diag">
+  <h2>서류 진단</h2>
+  <p>서류 이름과 목적을 적고, 질문 세 개에 답합니다. 목적이 비어 있으면 진단하지 않습니다.</p>
+  <label for="docName">서류 · 업무 이름</label>
+  <input type="text" id="docName" placeholder="예: 회의 결과 보고서">
+  <label for="docPurpose">이 서류는 왜 있나 (목적 한 줄)</label>
+  <input type="text" id="docPurpose" placeholder="예: 회의에서 정한 일을 남기기 위해">
+  <label for="qA">(가) 이 서류가 없어도 일이 되나</label>
+  <select id="qA"><option value="no">아니오</option><option value="yes">예</option></select>
+  <label for="qB">(나) 정해진 양식 · 반복 문장 · 자료 취합 · 대조가 대부분인가</label>
+  <select id="qB"><option value="no">아니오</option><option value="yes">예</option></select>
+  <label for="qC">(다) 누군가의 삶이 바뀌는 결정이 들어 있나</label>
+  <p class="muted">예: 지원 탈락, 허가 거부, 징계, 급여·평가에 영향이 있는 경우. 아니오: 내부 보고서 작성, 자료 취합만 하는 경우. 잘 모르겠으면 “모르겠음”을 고르세요. 모르면 사람이 직접으로 분류합니다.</p>
+  <select id="qC"><option value="no">아니오</option><option value="yes">예</option><option value="unknown">모르겠음</option></select>
+  <div><button type="button" class="action" id="diagnoseBtn">진단하기</button></div>
+  <div id="diagResult"></div>
+  <h3>진단한 서류</h3>
+  <div id="diagList"></div>
+</section>
+
+<section id="tab-ledger" hidden>
+  <h2>맡긴 일 목록</h2><p class="muted">이름과 맡긴 일만 적으면 됩니다. 범위와 확인 주기는 기본값(초안까지 · 매번)으로 들어갑니다.</p>
+  <label for="agentName">에이전트 이름</label>
+  <input type="text" id="agentName" placeholder="예: 문서 초안 에이전트">
+  <label for="agentTask">맡긴 일</label>
+  <input type="text" id="agentTask" placeholder="예: 회의 결과 보고서 초안 작성">
+  <div class="row">
+    <div>
+      <label for="agentScope">범위</label>
+      <select id="agentScope"><option>초안까지</option><option>취합 · 대조</option><option>처음부터 끝까지</option></select>
+    </div>
+    <div>
+      <label for="agentCycle">확인 주기</label>
+      <select id="agentCycle"><option>매번</option><option>매주</option><option>매월</option></select>
+    </div>
+  </div>
+  <label for="agentNot">맡기지 않을 일</label>
+  <input type="text" id="agentNot" placeholder="예: 최종 결정, 외부 발송">
+  <label><input type="checkbox" id="agentHard"> 되돌리기 어려운 일입니다</label>
+  <div><button type="button" class="action" id="addAgentBtn">목록에 추가하기</button></div>
+  <div id="agentList"></div>
+</section>
+
+<section id="tab-check" hidden>
+  <h2>확인 기록</h2>
+  <p>날짜는 오늘로 자동 입력됩니다. 에이전트와 무엇을 살펴봤는지 한 줄만 적으면 됩니다.</p>
+  <label for="checkDate">날짜</label>
+  <input type="date" id="checkDate">
+  <label for="checkAgent">에이전트</label>
+  <input type="text" id="checkAgent" placeholder="예: 문서 초안 에이전트">
+  <label for="checkWhat">무엇을 살펴봤나 (한 줄)</label>
+  <input type="text" id="checkWhat" placeholder="예: 날짜와 참석자, 정한 일 세 건을 원본과 대조했습니다">
+  <label for="checkResult">결과</label>
+  <select id="checkResult"><option>그대로 둠</option><option>고침</option><option>범위 바꿈</option><option>새 일 붙임</option></select>
+  <div><button type="button" class="action" id="addCheckBtn">기록 저장하기</button></div>
+  <div id="checkList"></div>
+</section>
+
+<section id="tab-overview" hidden>
+  <h2>한눈에 보기</h2>
+  <div id="overviewBox"></div>
+  <div class="card">
+    <label><input type="checkbox" id="monthlyDirect"> 이번 달 핵심 업무를 직접 해 봤습니다.</label>
+    <p class="muted">핵심 업무는 가끔 직접 해 보며 감을 잃지 않습니다.</p>
+  </div>
+</section>
+<section id="tab-guide" hidden>
+  <h2>사용법</h2>
+  <div class="card"><h3>1. 서류 진단</h3><p>서류 이름과 “이 서류는 왜 있나”를 적고, 질문 세 개에 답합니다.</p></div>
+  <div class="card"><h3>2. 4칸 분류</h3><p>질문 순서대로 자동 분류됩니다. 없앨 후보 / AI에게 맡김 / AI 초안 + 사람 결정 / 사람이 직접. 잘 모르겠으면 사람이 직접으로 분류됩니다.</p></div>
+  <div class="card"><h3>3. 맡긴 일 목록</h3><p>AI에게 맡김 또는 AI 초안 + 사람 결정인 서류만 목록에 붙일 수 있습니다. 에이전트 이름과 맡긴 일을 적으면 됩니다.</p></div>
+  <div class="card"><h3>4. 확인 기록</h3><p>무엇을 살펴봤는지 한 줄을 적어야 저장됩니다. 확인했다는 표시만 남기지 않습니다.</p></div>
+  <div class="card"><h3>5. 한눈에 보기</h3><p>분류별 개수, 에이전트별 마지막 확인일, 확인 주기가 지난 표시를 봅니다. 이번 달 핵심 업무를 직접 해 봤는지 체크합니다.</p></div>
+  <p class="muted">예시 넣기 버튼을 누르면 서류 5개와 목록, 확인 기록이 바로 채워집니다. JSON 내보내기로 파일을 저장해 두면 다른 기기에서도 불러올 수 있습니다.</p>
+</section>
+</main>
+
+<footer>
+<p>입력한 내용은 어디로도 보내지 않습니다. 저장은 이 브라우저 안에만 합니다.</p>
+<p>© 2026 Cobalt Architect (@cobaltarchitect) · Studio Cobalt</p>
+<p>코드는 MIT 라이선스로 누구나 고쳐 쓸 수 있습니다. 고쳐 쓸 때도 이 저작권 표시를 남겨 주세요.</p>
+</footer>
+
+<script>
+var KEY = "cobalt_delegation_board_v1";
+var state = load();
+function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || blank(); } catch(e){ return blank(); } }
+function blank(){ return {docs:[], agents:[], checks:[], monthlyDirect:false}; }
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); render(); }
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function classify(a,b,c){
+  if(a==="yes") return {cat:"없앨 후보", why:"이 서류가 없어도 일이 된다고 답했기 때문입니다. 없애는 것이 먼저입니다."};
+  if((c==="yes" || c==="unknown") && b==="yes") return {cat:"AI 초안 + 사람 결정", why:"반복되는 형식이 많지만, 삶에 닿는 결정이 들어 있기 때문입니다. AI는 초안까지, 결정은 사람이 합니다."};
+  if(c==="yes" || c==="unknown") return {cat:"사람이 직접", why:"삶에 닿는 결정이 들어 있고, 반복 형식 위주가 아니기 때문입니다."};
+  if(b==="yes") return {cat:"AI에게 맡김 (사람 확인)", why:"정해진 양식 · 반복 문장 · 자료 취합 · 대조가 대부분이기 때문입니다. 사람은 결과를 확인합니다."};
+  return {cat:"사람이 직접", why:"없앨 수도 없고, 반복 형식 위주도 아니기 때문입니다."};
+}
+function render(){
+  document.getElementById("monthlyDirect").checked = !!state.monthlyDirect;
+  var dl = document.getElementById("diagList");
+  dl.innerHTML = state.docs.length ? state.docs.map(function(d,i){
+    var canAttach = (d.cat==="AI에게 맡김 (사람 확인)" || d.cat==="AI 초안 + 사람 결정");
+    var attachHtml = canAttach ? '<button type="button" class="ghost" onclick="toLedger('+i+')">맡긴 일 목록에 붙이기</button> ' : '<p class="muted">AI에게 맡기는 일이 아니라 목록에 붙이지 않습니다.</p>';
+    return '<div class="card"><strong>'+esc(d.name)+'</strong> <span class="badge">'+esc(d.cat)+'</span><p class="muted">'+esc(d.purpose)+'</p><p>'+esc(d.why)+'</p>'+attachHtml+'<button type="button" class="ghost" onclick="removeDoc('+i+')">지우기</button></div>';
+  }).join("") : "<p>아직 진단한 서류가 없습니다.</p>";
+  var al = document.getElementById("agentList");
+  al.innerHTML = state.agents.length ? state.agents.map(function(a,i){
+    return '<div class="card"><strong>'+esc(a.name)+'</strong> '+(a.hard?'<span class="badge">사람 승인 필수</span>':"")+'<p>맡긴 일: '+esc(a.task)+'</p><p>범위: '+esc(a.scope)+' · 확인 주기: '+esc(a.cycle)+'</p><p>맡기지 않을 일: '+esc(a.not)+'</p><button type="button" class="ghost" onclick="removeAgent('+i+')">지우기</button></div>';
+  }).join("") : "<p>아직 목록에 등록한 에이전트가 없습니다.</p>";
+  var cl = document.getElementById("checkList");
+  cl.innerHTML = state.checks.length ? state.checks.map(function(c,i){
+    return '<div class="card"><strong>'+esc(c.date)+'</strong> · '+esc(c.agent)+' · '+esc(c.result)+'<p>'+esc(c.what)+'</p><button type="button" class="ghost" onclick="removeCheck('+i+')">지우기</button></div>';
+  }).join("") : "<p>아직 확인 기록이 없습니다.</p>";
+  var counts = {"없앨 후보":0,"AI에게 맡김 (사람 확인)":0,"AI 초안 + 사람 결정":0,"사람이 직접":0};
+  state.docs.forEach(function(d){ if(counts[d.cat]!==undefined) counts[d.cat]++; });
+  var today = new Date(); today.setHours(0,0,0,0);
+  function overdue(a){
+    var last = null;
+    state.checks.filter(function(c){return c.agent===a.name;}).forEach(function(c){ var d=new Date(c.date); if(!last || d>last) last=d; });
+    if(!last) return true;
+    var days = Math.floor((today-last)/86400000);
+    if(a.cycle==="매번") return days>0;
+    if(a.cycle==="매주") return days>7;
+    if(a.cycle==="매월") return days>31;
+    return false;
+  }
+  function lastText(a){
+    var last = null;
+    state.checks.filter(function(c){return c.agent===a.name;}).forEach(function(c){ if(!last || c.date>last) last=c.date; });
+    return last || "확인 기록 없음";
+  }
+  document.getElementById("overviewBox").innerHTML =
+    '<div class="card"><h3>4칸 분류별 개수</h3><p>없앨 후보: '+counts["없앨 후보"]+' · AI에게 맡김: '+counts["AI에게 맡김 (사람 확인)"]+' · AI 초안 + 사람 결정: '+counts["AI 초안 + 사람 결정"]+' · 사람이 직접: '+counts["사람이 직접"]+'</p></div>' +
+    '<div class="card"><h3>에이전트별 마지막 확인일</h3>' + (state.agents.length ? state.agents.map(function(a){ return '<p>'+(overdue(a)?'<span class="dot"></span>':"")+esc(a.name)+' · '+esc(lastText(a))+' · 주기 '+esc(a.cycle)+(overdue(a)?" · 확인 주기가 지났습니다":"")+'</p>'; }).join("") : "<p>등록한 에이전트가 없습니다.</p>") + '</div>';
+}
+window.toLedger = function(i){
+  var d = state.docs[i];
+  if(d.cat!=="AI에게 맡김 (사람 확인)" && d.cat!=="AI 초안 + 사람 결정"){ alert("AI에게 맡김 또는 AI 초안 + 사람 결정인 서류만 목록에 붙일 수 있습니다."); return; }
+  state.agents.push({name:"문서 에이전트", task:d.name, scope:d.cat==="AI 초안 + 사람 결정"?"초안까지":"취합 · 대조", not:"최종 결정", hard:d.cat==="AI 초안 + 사람 결정", cycle:"매번"});
+  save(); showTab("ledger");
+};
+window.removeDoc = function(i){ state.docs.splice(i,1); save(); };
+window.removeAgent = function(i){ state.agents.splice(i,1); save(); };
+window.removeCheck = function(i){ state.checks.splice(i,1); save(); };
+function showTab(name){
+  document.querySelectorAll(".tabs button").forEach(function(b){ b.classList.toggle("active", b.dataset.tab===name); });
+  ["diag","ledger","check","overview","guide"].forEach(function(t){ document.getElementById("tab-"+t).hidden = (t!==name); });
+  if(name==="overview") render();
+}
+document.querySelectorAll(".tabs button").forEach(function(b){ b.addEventListener("click", function(){ showTab(b.dataset.tab); }); });
+document.getElementById("diagnoseBtn").addEventListener("click", function(){
+  var name = document.getElementById("docName").value.trim();
+  var purpose = document.getElementById("docPurpose").value.trim();
+  if(!name || !purpose){ alert("서류 이름과 목적을 모두 적어야 진단합니다."); return; }
+  var r = classify(document.getElementById("qA").value, document.getElementById("qB").value, document.getElementById("qC").value);
+  state.docs.push({name:name, purpose:purpose, cat:r.cat, why:r.why});
+  document.getElementById("diagResult").innerHTML = '<div class="result"><strong>결과: '+esc(r.cat)+'</strong><p>'+esc(r.why)+'</p></div>';
+  save();
+});
+document.getElementById("addAgentBtn").addEventListener("click", function(){
+  var name = document.getElementById("agentName").value.trim();
+  var task = document.getElementById("agentTask").value.trim();
+  if(!name || !task){ alert("에이전트 이름과 맡긴 일을 적어야 합니다."); return; }
+  state.agents.push({name:name, task:task, scope:document.getElementById("agentScope").value, cycle:document.getElementById("agentCycle").value, not:document.getElementById("agentNot").value.trim(), hard:document.getElementById("agentHard").checked});
+  save();
+});
+document.getElementById("addCheckBtn").addEventListener("click", function(){
+  var what = document.getElementById("checkWhat").value.trim();
+  var agent = document.getElementById("checkAgent").value.trim();
+  var date = document.getElementById("checkDate").value;
+  if(!what || !agent || !date){ alert("날짜, 에이전트, 무엇을 살펴봤는지 모두 적어야 저장됩니다."); return; }
+  state.checks.push({date:date, agent:agent, what:what, result:document.getElementById("checkResult").value});
+  save();
+});
+document.getElementById("monthlyDirect").addEventListener("change", function(e){ state.monthlyDirect = e.target.checked; save(); });
+document.getElementById("exampleBtn").addEventListener("click", function(){
+  state.docs = [
+    {name:"회의 결과 보고서", purpose:"회의에서 정한 일을 남기기 위해", cat:"AI에게 맡김 (사람 확인)", why:"정해진 양식 · 반복 문장 · 자료 취합 · 대조가 대부분이기 때문입니다. 사람은 결과를 확인합니다."},
+    {name:"행사 운영 계획서", purpose:"행사 순서를 미리 정하기 위해", cat:"사람이 직접", why:"없앨 수도 없고, 반복 형식 위주도 아니기 때문입니다."},
+    {name:"만족도 조사 취합", purpose:"조사 답을 모아 표로 만들기 위해", cat:"AI에게 맡김 (사람 확인)", why:"정해진 양식 · 반복 문장 · 자료 취합 · 대조가 대부분이기 때문입니다. 사람은 결과를 확인합니다."},
+    {name:"지원 대상 선정", purpose:"지원을 받을 사람을 정하기 위해", cat:"AI 초안 + 사람 결정", why:"반복되는 형식이 많지만, 삶에 닿는 결정이 들어 있기 때문입니다. AI는 초안까지, 결정은 사람이 합니다."},
+    {name:"시설 안전 점검 체크리스트", purpose:"시설 상태를 빠짐없이 확인하기 위해", cat:"AI에게 맡김 (사람 확인)", why:"정해진 양식 · 반복 문장 · 자료 취합 · 대조가 대부분이기 때문입니다. 사람은 결과를 확인합니다."}
+  ];
+  state.agents = [
+    {name:"문서 초안 에이전트", task:"회의 결과 보고서, 만족도 조사 취합", scope:"취합 · 대조", not:"최종 결정", hard:false, cycle:"매번"},
+    {name:"선정 초안 에이전트", task:"지원 대상 선정 초안", scope:"초안까지", not:"최종 선정 결정", hard:true, cycle:"매번"}
+  ];
+  state.checks = [
+    {date:"2026-10-28", agent:"문서 초안 에이전트", what:"회의 날짜와 정한 일 세 건을 원본과 대조했습니다", result:"그대로 둠"},
+    {date:"2026-10-28", agent:"선정 초안 에이전트", what:"선정 기준과 빠진 서류가 있는지 살펴봤습니다", result:"고침"}
+  ];
+  save(); showTab("overview");
+});
+document.getElementById("exportBtn").addEventListener("click", function(){
+  var blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+  var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "cobalt_위임관리보드_내보내기.json"; a.click();
+});
+document.getElementById("importBtn").addEventListener("click", function(){ document.getElementById("importFile").click(); });
+document.getElementById("importFile").addEventListener("change", function(e){
+  var f = e.target.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){ try { var d = JSON.parse(r.result); if(d && d.docs && d.agents && d.checks){ state = d; save(); } else { alert("이 보드 형식이 아닙니다."); } } catch(err){ alert("JSON을 읽지 못했습니다."); } };
+  r.readAsText(f);
+});
+document.getElementById("printBtn").addEventListener("click", function(){ window.print(); });
+document.getElementById("checkDate").value = "2026-10-28";
+render();
+</script>
+</body>
+</html>
