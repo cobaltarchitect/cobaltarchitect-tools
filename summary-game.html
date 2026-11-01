@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>요약 검증 게임 — AI 요약을 믿어도 될까요?</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    background: #FAF6EE; color: #101012; line-height: 1.7;
+    max-width: 720px; margin: 0 auto; padding: 20px 16px 60px;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 6px; }
+  .subtitle { color: #555; font-size: 0.95rem; margin-bottom: 20px; }
+  .card {
+    border: 1.5px solid #101012; background: #fff;
+    padding: 16px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.05rem; margin-bottom: 10px; color: #193A8A; }
+  .doc-label {
+    display: inline-block; font-size: 0.8rem; font-weight: bold;
+    border: 1.5px solid #101012; padding: 2px 10px; margin-bottom: 10px;
+  }
+  .doc-label.ai { background: #193A8A; color: #FAF6EE; border-color: #193A8A; }
+  .doc-label.orig { background: #FAF6EE; color: #101012; }
+  .text-body { font-size: 0.95rem; }
+  .text-body p { margin-bottom: 8px; }
+  .clickable {
+    cursor: pointer; border-bottom: 2px dashed #193A8A;
+    padding: 0 1px; transition: background 0.15s;
+  }
+  .clickable:hover { background: #e8eefc; }
+  .clickable.found { background: #c8f0c8; border-bottom: 2px solid #1a7a1a; cursor: default; }
+  .clickable.wrong { background: #f8d0d0; }
+  .feedback {
+    display: none; margin-top: 12px; padding: 12px;
+    border: 1.5px solid #101012; font-size: 0.9rem;
+  }
+  .feedback.show { display: block; }
+  .feedback.correct { background: #e8f8e8; }
+  .feedback.incorrect { background: #fdf0f0; }
+  .progress {
+    display: flex; gap: 8px; margin: 16px 0;
+  }
+  .dot {
+    width: 32px; height: 32px; border: 1.5px solid #101012;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 0.9rem; background: #fff;
+  }
+  .dot.done { background: #193A8A; color: #FAF6EE; border-color: #193A8A; }
+  #result { display: none; text-align: center; padding: 24px 16px; }
+  #result.show { display: block; }
+  #result .score { font-size: 2.5rem; font-weight: bold; color: #193A8A; margin: 12px 0; }
+  button {
+    font-family: inherit; font-size: 1rem; font-weight: bold;
+    background: #193A8A; color: #FAF6EE; border: 1.5px solid #193A8A;
+    padding: 12px 28px; cursor: pointer; margin-top: 12px;
+  }
+  button:hover { background: #101012; border-color: #101012; }
+  button.secondary { background: #FAF6EE; color: #101012; }
+  .hint { font-size: 0.85rem; color: #666; margin-top: 8px; }
+  .toggle-btn {
+    background: #FAF6EE; color: #101012; border: 1.5px solid #101012;
+    padding: 8px 16px; font-size: 0.9rem; margin-bottom: 12px;
+  }
+  #original-doc { display: none; }
+  #original-doc.show { display: block; }
+  .footer { margin-top: 32px; font-size: 0.8rem; color: #888; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>요약 검증 게임</h1>
+<p class="subtitle">AI가 정리해 준 문서, 그대로 믿어도 될까요? 원문과 비교해 왜곡된 3곳을 찾아보세요.</p>
+
+<div class="progress" id="progress">
+  <div class="dot" id="dot1">1</div>
+  <div class="dot" id="dot2">2</div>
+  <div class="dot" id="dot3">3</div>
+</div>
+
+<div class="card">
+  <span class="doc-label ai">AI 요약</span>
+  <div class="text-body" id="ai-summary">
+    <p>지난 분기 <span class="clickable" data-answer="1">직원들이</span> 재택근무를 선호하는 것으로 나타났습니다.</p>
+    <p>생산성은 <span class="clickable" data-answer="2">향상됐다고</span> 보고서는 밝히고 있습니다.</p>
+    <p>응답자의 <span class="clickable" data-answer="3">85%</span>가 현행 제도에 만족한다고 답했습니다.</p>
+  </div>
+  <div class="feedback" id="fb1"></div>
+  <div class="feedback" id="fb2"></div>
+  <div class="feedback" id="fb3"></div>
+  <p class="hint">밑줄 친 부분을 눌러보세요. 원문이 필요하면 아래 버튼을 눌러 확인하세요.</p>
+  <button class="toggle-btn" onclick="toggleOriginal()">원문 보기 / 숨기기</button>
+</div>
+
+<div class="card" id="original-doc">
+  <span class="doc-label orig">원문</span>
+  <div class=" text-body">
+    <p>지난 분기 <strong>일부 직원들이</strong> 재택근무를 선호하는 것으로 나타났습니다. (전체 응답자 중 34%)</p>
+    <p>생산성은 <strong>향상됐을 수도 있다고</strong> 보고서는 밝히고 있습니다. (표본 오차 ±5%p)</p>
+    <p>응답자의 <strong>58%</strong>가 현행 제도에 만족한다고 답했습니다.</p>
+  </div>
+</div>
+
+<div class="card" id="result">
+  <h2>결과</h2>
+  <div class="score" id="score-text"></div>
+  <p id="result-msg"></p>
+  <button class="secondary" onclick="location.reload()">다시 하기</button>
+</div>
+
+<p class="footer">Cobalt Architect · 《정보는 넘치는데 왜 내 것이 되지 않을까》</p>
+
+<script>
+const answers = {
+  1: {
+    correct: "맞습니다. 원문은 \"일부 직원들\"입니다. \"일부\"가 빠지면서 소수가 전체인 것처럼 바뀌었습니다.",
+    wrong: "이 부분은 원문과 같습니다. 다른 곳을 찾아보세요."
+  },
+  2: {
+    correct: "맞습니다. 원문은 \"향상됐을 수도 있다\"입니다. \"수도\"가 빠지면서 추정이 단정이 되었습니다.",
+    wrong: "이 부분은 원문과 같습니다. 다른 곳을 찾아보세요."
+  },
+  3: {
+    correct: "맞습니다. 원문은 \"58%\"입니다. 숫자가 85%로 바뀌었습니다. 숫자는 원문에서 직접 확인해야 합니다.",
+    wrong: "이 부분은 원문과 같습니다. 다른 곳을 찾아보세요."
+  }
+};
+
+let found = 0;
+let attempts = 0;
+const totalAnswers = 3;
+const foundSet = new Set();
+
+document.querySelectorAll('.clickable').forEach(el => {
+  el.addEventListener('click', function() {
+    const id = this.dataset.answer;
+    if (foundSet.has(id)) return;
+    attempts++;
+
+    const fb = document.getElementById('fb' + id);
+
+    // 정답 판정: data-answer가 있는 clickable은 모두 정답 후보
+    // 실제로는 3개 모두가 정답
+    foundSet.add(id);
+    found++;
+    this.classList.add('found');
+    fb.className = 'feedback show correct';
+    fb.textContent = answers[id].correct;
+    document.getElementById('dot' + found).classList.add('done');
+
+    if (found === totalAnswers) {
+      setTimeout(showResult, 600);
+    }
+  });
+});
+
+function toggleOriginal() {
+  document.getElementById('original-doc').classList.toggle('show');
+}
+
+function showResult() {
+  const r = document.getElementById('result');
+  r.classList.add('show');
+  document.getElementById('score-text').textContent = found + " / " + totalAnswers;
+  let msg;
+  if (attempts === 3) {
+    msg = "완벽합니다. 한 번에 다 찾으셨네요. 원문과 견주는 습관이 몸에 밴 분입니다.";
+  } else if (attempts <= 5) {
+    msg = "잘 찾으셨습니다. " + attempts + "번 만에 3곳을 다 찾았습니다. 요약은 항상 원문과 맞춰 보세요.";
+  } else {
+    msg = attempts + "번 만에 찾았습니다. 요약의 함정은 생각보다 잘 안 보입니다. 숫자와 단정적인 표현을 먼저 의심해 보세요.";
+  }
+  document.getElementById('result-msg').textContent = msg;
+  r.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
