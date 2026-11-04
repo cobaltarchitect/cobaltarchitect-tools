@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>평가 목적 체크리스트</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: #FAF6EE; color: #101012; line-height: 1.6; padding: 20px; max-width: 600px; margin: 0 auto; }
+  h1 { font-size: 1.4em; margin-bottom: 8px; }
+  .subtitle { color: #555; margin-bottom: 24px; font-size: 0.95em; }
+  .question { background: #fff; border: 1.5px solid #101012; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .question h3 { font-size: 1em; margin-bottom: 8px; }
+  .question p { font-size: 0.9em; color: #555; margin-bottom: 12px; }
+  .options { display: flex; gap: 8px; flex-wrap: wrap; }
+  .options button { flex: 1; min-width: 120px; padding: 10px; border: 1.5px solid #101012; border-radius: 6px; background: #FAF6EE; cursor: pointer; font-size: 0.95em; }
+  .options button.selected { background: #193A8A; color: #fff; border-color: #193A8A; }
+  #result { display: none; margin-top: 24px; padding: 20px; border: 2px solid #193A8A; border-radius: 8px; background: #fff; }
+  #result h2 { color: #193A8A; margin-bottom: 12px; font-size: 1.1em; }
+  #result p { margin-bottom: 8px; font-size: 0.95em; }
+  #result ul { margin: 12px 0; padding-left: 20px; }
+  #result li { margin-bottom: 6px; font-size: 0.95em; }
+  #reset { margin-top: 16px; padding: 10px 20px; border: 1.5px solid #101012; border-radius: 6px; background: #FAF6EE; cursor: pointer; }
+  .progress { text-align: center; margin-bottom: 16px; color: #555; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<h1>평가 목적 체크리스트</h1>
+<p class="subtitle">이 평가는 무엇을 위해 있는가 — 여섯 가지 질문으로 목적부터 다시 따져봅니다.</p>
+<div class="progress" id="progress">0 / 6 완료</div>
+<div id="questions"></div>
+<div id="result">
+  <h2 id="result-title"></h2>
+  <div id="result-body"></div>
+  <button id="reset" onclick="reset()">다시 하기</button>
+</div>
+
+<script>
+const questions = [
+  {
+    q: "1. 이 평가는 누구를 위한 것인가요?",
+    desc: "배움을 돕는 평가인지, 자격을 확인하는 평가인지, 선발을 위한 평가인지부터 나눠야 합니다.",
+    options: ["배움을 돕기 위해", "자격 확인을 위해", "선발을 위해", "잘 모르겠다"]
+  },
+  {
+    q: "2. 한 번의 평가가 여러 목적을 떠안고 있나요?",
+    desc: "한 번의 시험이 배움 확인, 자격 증명, 선발을 위한 순서 매기기까지 다 떠안으면 어느 하나도 제대로 하기 어렵습니다.",
+    options: ["하나의 목적만 있다", "두 가지가 섞여 있다", "세 가지 이상 섞여 있다"]
+  },
+  {
+    q: "3. 꼭 점수가 있어야 하나요?",
+    desc: "점수를 받은 학생보다 구체적인 의견을 받은 학생이 과제에 더 흥미를 보였다는 연구가 있습니다.",
+    options: ["점수가 꼭 필요하다", "의견으로 충분하다", "잘 모르겠다"]
+  },
+  {
+    q: "4. 평가 결과에 너무 많은 것이 걸려 있나요?",
+    desc: "어떤 숫자로 중요한 결정을 많이 내릴수록 그 숫자는 부풀려집니다. 캠벨의 법칙입니다.",
+    options: ["적당하다", "조금 많이 걸려 있다", "너무 많이 걸려 있다"]
+  },
+  {
+    q: "5. AI를 어디에 쓰고 있나요?",
+    desc: "낡은 틀 위에 AI를 얹으면 그 틀을 조금 더 빨리 돌릴 뿐입니다. 목적이 먼저 서야 AI의 자리도 달라집니다.",
+    options: ["목적에 맞게 쓰고 있다", "틀은 그대로 두고 얹었다", "아직 안 쓰고 있다"]
+  },
+  {
+    q: "6. 이 평가가 없어지면 무엇이 곤란한가요?",
+    desc: "평가를 없앴을 때 생기는 빈자리를 보면, 그 평가가 실제로 하던 일을 알 수 있습니다.",
+    options: ["배움 확인이 안 된다", "선발 기준이 없어진다", "별일 없을 것 같다"]
+  }
+];
+
+let answers = new Array(6).fill(-1);
+
+function render() {
+  const container = document.getElementById('questions');
+  container.innerHTML = '';
+  questions.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'question';
+    div.innerHTML = `<h3>${item.q}</h3><p>${item.desc}</p><div class="options"></div>`;
+    const opts = div.querySelector('.options');
+    item.options.forEach((opt, j) => {
+      const btn = document.createElement('button');
+      btn.textContent = opt;
+      if (answers[i] === j) btn.classList.add('selected');
+      btn.onclick = () => { answers[i] = j; render(); checkComplete(); };
+      opts.appendChild(btn);
+    });
+    container.appendChild(div);
+  });
+  const done = answers.filter(a => a >= 0).length;
+  document.getElementById('progress').textContent = `${done} / 6 완료`;
+}
+
+function checkComplete() {
+  if (answers.every(a => a >= 0)) {
+    const result = document.getElementById('result');
+    const title = document.getElementById('result-title');
+    const body = document.getElementById('result-body');
+    result.style.display = 'block';
+
+    let issues = [];
+    if (answers[1] === 2) issues.push("한 평가에 세 가지 이상 목적이 섞여 있습니다. 배움용·자격용·선발용을 나눠 보세요.");
+    if (answers[1] === 1) issues.push("두 가지 목적이 섞여 있습니다. 나눌 수 있는지 검토해 보세요.");
+    if (answers[3] === 2) issues.push("평가에 너무 많은 것이 걸려 있습니다. 캠벨의 법칙이 작동하고 있을 수 있습니다.");
+    if (answers[4] === 1) issues.push("AI를 낡은 틀 위에 얹은 상태입니다. 목적을 먼저 다시 물어보세요.");
+
+    if (issues.length === 0) {
+      title.textContent = "목적이 분명한 평가입니다";
+      body.innerHTML = "<p>이 평가는 목적이 비교적 분명합니다. 지금의 방식을 유지하면서, AI를 배움을 돕는 쪽에 써 보세요.</p>";
+    } else {
+      title.textContent = "다시 따져볼 지점 " + issues.length + "가지";
+      body.innerHTML = "<ul>" + issues.map(i => "<li>" + i + "</li>").join("") + "</ul><p>틀을 다시 짠다는 것은 평가 하나하나에 목적을 처음부터 다시 묻는 일입니다.</p>";
+    }
+    result.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+function reset() {
+  answers = new Array(6).fill(-1);
+  document.getElementById('result').style.display = 'none';
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
