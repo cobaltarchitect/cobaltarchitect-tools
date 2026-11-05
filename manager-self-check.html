@@ -27,6 +27,12 @@
 <div class="wrap">
   <h1>일하는 관리자 자가진단</h1>
   <p class="sub">6가지 질문에 답하면, 지금 내 관리 스타일이 어디에 가까운지 알려 드립니다.</p>
+  <div style="border:1.5px solid #101012;background:#fff;padding:14px;margin-bottom:20px;font-size:13px;">
+    <strong>유형 안내</strong><br>
+    A — 일하는 관리자 (플레잉 코치형): 직접 일하면서 이끄는 방향. 좋은 쪽입니다.<br>
+    B — 전환 중인 관리자: 절반은 일하고 절반은 맡기는 중간 단계입니다.<br>
+    C — 손을 놓고 있는 관리자: 지시와 보고 위주. 주의가 필요한 방향입니다.
+  </div>
   <div id="quiz"></div>
   <button id="calc">결과 보기</button>
   <div id="result"></div>
@@ -61,19 +67,22 @@ quiz.addEventListener('click', e => {
 document.getElementById('calc').addEventListener('click', () => {
   if (ans.includes(null)) { alert('모든 질문에 답해 주세요.'); return; }
   const score = ans.filter(v => v === 'a').length;
-  let title, body;
+  let title, body, level;
   if (score >= 5) {
-    title = '일하는 관리자에 가깝습니다';
-    body = '<p>직접 일하면서 팀을 이끄는 플레잉 코치에 가깝습니다. 현장의 언어로 말하고, 손으로 해 본 경험을 바탕으로 판단합니다.</p><p>유지할 것: 지금의 리듬을 지키되, 번아웃에 주의하세요. 모든 일을 직접 하려 하면 지칩니다.</p>';
+    level = '유형 A — 일하는 관리자';
+    title = '플레잉 코치형';
+    body = '<p><strong>좋은 방향입니다.</strong> 직접 일하면서 팀을 이끄는 스타일입니다. 현장의 언어로 말하고, 손으로 해 본 경험을 바탕으로 판단합니다.</p><p><strong>유지할 것:</strong> 지금의 리듬을 지키되, 번아웃에 주의하세요. 모든 일을 직접 하려 하면 지칩니다. 맡길 일과 직접 할 일을 구분하는 것도 관리입니다.</p><p><strong>다음 단계:</strong> AI 도구를 관리하는 법을 팀에 공유해 보세요. 내가 터득한 방식을 다른 사람도 쓸 수 있게 만드는 것이 리더의 일입니다.</p>';
   } else if (score >= 3) {
+    level = '유형 B — 전환 중인 관리자';
     title = '절반은 일하고, 절반은 맡기고 있습니다';
-    body = '<p>실무 감각은 있지만, 서류와 회의에 시간을 많이 빼앗기고 있을 수 있습니다. AI가 거들 수 있는 일을 찾아보세요.</p><p>해 볼 것: 이번 주에 보고서 하나를 AI와 함께 직접 만들어 보세요. 형식을 맞추는 시간부터 줄일 수 있습니다.</p>';
+    body = '<p><strong>중간 단계입니다.</strong> 실무 감각은 있지만, 서류와 회의에 시간을 많이 빼앗기고 있을 수 있습니다. 이대로 가면 어느 쪽으로도 갈 수 있습니다.</p><p><strong>좋은 방향으로 가려면:</strong> AI가 거들 수 있는 일부터 찾아보세요. 자료 모으기, 형식 맞추기, 빠진 것 찾기부터 맡기면 현장에 쓸 시간이 생깁니다.</p><p><strong>나쁜 방향으로 가면:</strong> 서류가 더 늘어나고 현장이 더 멀어집니다. 보고만 받는 관리자가 되기 쉽습니다.</p>';
   } else {
-    title = '손을 놓고 있는 시간이 깁니다';
-    body = '<p>지시와 보고 위주로 일하고 있을 수 있습니다. 현장과 멀어지면 판단이 어긋나기 쉽습니다.</p><p>해 볼 것: 내일, 팀원이 하는 일 하나를 직접 해 보세요. 자료 하나를 직접 살펴보는 것부터 시작하면 됩니다.</p>';
+    level = '유형 C — 손을 놓고 있는 관리자';
+    title = '지시와 보고 위주로 일하고 있습니다';
+    body = '<p><strong>주의가 필요합니다.</strong> 현장과 멀어지면 판단이 어긋나기 쉽습니다. 체스키가 말한 "사람만 관리하는 관리자"에 가까워지고 있을 수 있습니다.</p><p><strong>좋은 방향으로 가려면:</strong> 내일, 팀원이 하는 일 하나를 직접 해 보세요. 자료 하나를 직접 살펴보는 것부터 시작하면 됩니다. 작은 일부터 손에 익히는 것이 중요합니다.</p><p><strong>이대로 두면:</strong> AI 시대에 관리자의 자리가 좁아질 수 있습니다. 직접 해 본 경험이 없으면 AI가 내놓은 결과도 제대로 판단하기 어렵습니다.</p>';
   }
   const r = document.getElementById('result');
-  r.innerHTML = '<h2>' + title + '</h2>' + body + '<p style="color:#888;font-size:13px;margin-top:16px;">' + score + '/6개 항목에서 직접 일하는 쪽에 답했습니다.</p>';
+  r.innerHTML = '<p style="font-size:13px;color:#888;margin-bottom:4px;">' + level + '</p><h2>' + title + '</h2>' + body + '<p style="color:#888;font-size:13px;margin-top:16px;">' + score + '/6개 항목에서 직접 일하는 쪽에 답했습니다. A로 갈수록 일하는 관리자에 가깝습니다.</p>';
   r.style.display = 'block';
   document.getElementById('reset').style.display = 'block';
   document.getElementById('calc').style.display = 'none';
